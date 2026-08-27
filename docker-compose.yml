@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Servicio Base de Datos: MySQL 8.0
+  db:
+    image: mysql:8.0
+    container_name: app_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_123
+      MYSQL_DATABASE: mi_base_datos
+      MYSQL_USER: usuario_demo
+      MYSQL_PASSWORD: clave_secreta_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio Web: Apache + PHP 8.2
+  web:
+    image: php:8.2-apache
+    container_name: app_web
+    restart: always
+    command: >
+      sh -c "docker-php-ext-install pdo pdo_mysql && apache2-foreground"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./codigo:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
